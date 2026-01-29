@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -9,11 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Search, Phone, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCustomerStore, useCartStore } from '@/lib/store';
-import { categories, menuItems } from '@/lib/menu-data';
 import CartDrawer from '@/components/cart-drawer';
 import MenuItemCard from '@/components/menu-item-card';
 import CallStaffDialog from '@/components/call-staff-dialog';
 import EditCustomerDialog from '@/components/edit-customer-dialog';
+import type { Category, MenuItemType } from '@/lib/store';
 
 export default function MenuPage() {
   const router = useRouter();
@@ -24,6 +24,31 @@ export default function MenuPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [callStaffOpen, setCallStaffOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch menu data
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const response = await fetch('/api/admin/menu');
+        if (!response.ok) throw new Error('Failed to fetch menu');
+        const data = await response.json();
+        setCategories(data.categories || []);
+        setMenuItems(data.items || []);
+        if (data.categories.length > 0) {
+          setSelectedCategory(data.categories[0].id);
+        }
+      } catch (error) {
+        console.error('Error fetching menu:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMenu();
+  }, []);
 
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
@@ -42,6 +67,14 @@ export default function MenuPage() {
   if (!customerName || !tableNumber) {
     router.push('/');
     return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Đang tải menu...</p>
+      </div>
+    );
   }
 
   return (

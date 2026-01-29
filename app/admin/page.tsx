@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { AlertCircle, Volume2, VolumeX, History } from 'lucide-react';
 import { toast } from 'sonner';
 import OrderHistory from '@/components/admin/order-history';
+import MenuManagement from '@/components/admin/menu-management';
 import type { Order, OrderItem } from '@/lib/orders-store';
 
 const POLL_INTERVAL = 3000; // Poll every 3 seconds
@@ -25,6 +26,7 @@ export default function AdminPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
+  const [currentTab, setCurrentTab] = useState<'orders' | 'menu'>('orders');
   const lastFetchRef = useRef<Order[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const notificationShownRef = useRef<Set<string>>(new Set());
@@ -172,52 +174,75 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-40 border-b border-border bg-card shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-foreground">Quản lý đơn hàng</h1>
-            <Button
-              variant={notificationsEnabled ? 'default' : 'outline'}
-              size="icon"
-              onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-              title={notificationsEnabled ? 'Tắt thông báo' : 'Bật thông báo'}
-            >
-              {notificationsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-            </Button>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="flex gap-3 mb-4">
-            <Input
-              placeholder="Tìm kiếm bàn số..."
-              value={searchTable}
-              onChange={(e) => setSearchTable(e.target.value)}
-              className="flex-1 max-w-xs"
-            />
-            <Button
-              variant={showHistory ? 'default' : 'outline'}
-              onClick={() => setShowHistory(!showHistory)}
-            >
-              <History className="w-4 h-4 mr-2" />
-              Lịch sử
-            </Button>
-          </div>
-
-          {/* Status Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="ALL">Tất cả</TabsTrigger>
-              <TabsTrigger value="NEW">Mới</TabsTrigger>
-              <TabsTrigger value="PREPARING">Đang làm</TabsTrigger>
-              <TabsTrigger value="DONE">Hoàn tất</TabsTrigger>
-            </TabsList>
-          </Tabs>
+      <div className="max-w-7xl mx-auto px-4 py-6 border-b border-border">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold text-foreground">
+            {currentTab === 'orders' ? 'Quản lý Đơn hàng' : 'Quản lý Menu'}
+          </h1>
+          {currentTab === 'orders' && (
+            <div className="flex items-center gap-3">
+              <Button
+                variant={notificationsEnabled ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+              >
+                {notificationsEnabled ? (
+                  <Volume2 className="w-4 h-4 mr-2" />
+                ) : (
+                  <VolumeX className="w-4 h-4 mr-2" />
+                )}
+                {notificationsEnabled ? 'Bật' : 'Tắt'}
+              </Button>
+            </div>
+          )}
         </div>
+
+        {/* Tab Navigation */}
+        <Tabs value={currentTab} onValueChange={(val) => setCurrentTab(val as 'orders' | 'menu')}>
+          <TabsList>
+            <TabsTrigger value="orders">Đơn hàng</TabsTrigger>
+            <TabsTrigger value="menu">Menu</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Orders-specific filters */}
+        {currentTab === 'orders' && (
+          <>
+            {/* Search and Filters */}
+            <div className="flex gap-3 mt-4 mb-4">
+              <Input
+                placeholder="Tìm kiếm bàn số..."
+                value={searchTable}
+                onChange={(e) => setSearchTable(e.target.value)}
+                className="flex-1 max-w-xs"
+              />
+              <Button
+                variant={showHistory ? 'default' : 'outline'}
+                onClick={() => setShowHistory(!showHistory)}
+              >
+                <History className="w-4 h-4 mr-2" />
+                Lịch sử
+              </Button>
+            </div>
+
+            {/* Status Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="ALL">Tất cả</TabsTrigger>
+                <TabsTrigger value="NEW">Mới</TabsTrigger>
+                <TabsTrigger value="PREPARING">Đang làm</TabsTrigger>
+                <TabsTrigger value="DONE">Hoàn tất</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </>
+        )}
       </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {showHistory ? (
+        {currentTab === 'menu' ? (
+          <MenuManagement />
+        ) : showHistory ? (
           <OrderHistory
             allOrders={orders}
             formatTime={formatTime}
